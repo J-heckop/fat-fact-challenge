@@ -28,7 +28,30 @@ header .art{animation:heroRise .9s .15s ease both,gentleFloat 6s 1.1s ease-in-ou
  .reveal{opacity:1;transform:none}
 }
 
-</style></head><body>
+
+/* FLOW WAVE — animated learning-site background only */
+html,body{background:#000!important}
+#scene{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;pointer-events:none}
+body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 0 0,rgba(10,255,127,.16),transparent 28%),radial-gradient(ellipse at 100% 0,rgba(10,255,127,.13),transparent 27%),radial-gradient(ellipse at 0 100%,rgba(10,255,127,.10),transparent 25%);mix-blend-mode:screen}
+nav,header,section,footer{position:relative;z-index:1}
+nav{background:rgba(2,14,9,.78);backdrop-filter:blur(14px);border-color:rgba(52,232,154,.18)}
+header.wrap{min-height:calc(100vh - 65px);padding:80px 0 100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px}
+header>div:first-child{max-width:900px}
+header .eyebrow{color:#7affbf}
+header h1{font-size:clamp(3rem,8vw,6.7rem);line-height:.99;text-shadow:0 5px 36px rgba(0,0,0,.55)}
+header h1 em{color:#34e89a}
+header .lead{max-width:760px;margin:24px auto;color:#d0e6d8}
+header .art{display:none}
+header .btn{margin:12px 7px 0}
+.btn{background:#34e89a;color:#03180e;box-shadow:0 0 24px rgba(52,232,154,.15)}
+.btn.secondary{background:rgba(2,22,12,.5);color:#e9fff2;border:1px solid #34e89a}
+section{background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.24))}
+.card,.compare,.game{background:rgba(12,31,22,.82);backdrop-filter:blur(12px);border-color:rgba(52,232,154,.19)}
+footer{background:rgba(0,0,0,.45)}
+#scroll-hint{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:2;color:rgba(174,240,192,.7);font-size:11px;letter-spacing:.22em;text-transform:uppercase;pointer-events:none;transition:opacity .3s}
+@media(max-width:760px){header.wrap{min-height:calc(88vh - 65px);padding:65px 0 80px}header h1{font-size:clamp(2.7rem,12vw,4.8rem)}}
+
+</style></head><body><canvas id="scene" aria-hidden="true"></canvas><div id="scroll-hint">SCROLL ↓</div>
 <nav><div class="wrap nav"><a class="brand" href="#">🥑 FAT <b>FACT</b> CHALLENGE</a><div class="links"><a href="#learn">Learn</a><a href="#types">Fat types</a><a href="#health">Health</a><a href="#game">Play</a><a href="game.html">Arcade</a></div></div></nav>
 <header class="wrap"><div><div class="eyebrow">Health & Wellness · Interactive learning</div><h1>Know your fats.<br><em>Fuel your facts.</em></h1><p class="lead">Explore dietary fats, understand how they work in the body, and test your knowledge with three mini-games.</p><a class="btn" href="#game">🎮 Play the challenge</a></div><div class="art">🥑 🐟 🫒 🥜</div></header>
 <section id="learn"><div class="wrap"><div class="head"><div class="eyebrow">01 · The essentials</div><h2>Fat is not the enemy.</h2><p>Dietary fat is an essential nutrient. The type of fat and the foods it comes from matter.</p></div><div class="grid">
@@ -102,4 +125,116 @@ function choose(n){if(locked)return;locked=true;let q=items[i],correct=q[mode===
 $("next").onclick=()=>{if(!locked)return;if(++i===items.length)finish();else render()};
 function finish(){$("play").classList.add("hidden");$("result").classList.remove("hidden");$("finalScore").textContent=score+"/"+items.length;$("resultTitle").textContent=score===items.length?"Perfect score! 🏆":score>=Math.ceil(items.length*.7)?"Great work! 🌟":"Keep exploring! 🌱";$("resultText").textContent="You answered "+score+" out of "+items.length+" correctly. Review the facts and try again!"}
 document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));b.classList.add("active");start(b.dataset.mode)});$("again").onclick=()=>start(mode);start();
-</script></body></html>
+</script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.143.0/build/three.module.js"}}
+</script>
+<script type="module" id="flow-wave-module">
+import * as THREE from "three";
+
+const bgColor="#02160c", atmoColor="#7affbf", colorLow="#02160c", colorHigh="#34e89a";
+const atmoCount=300, atmoSize=24, atmoSpeed=1, opacity=.26, pointSize=5.5, brightness=.45;
+const waveHeight=3, flow=1, scale=.275, scrollRise=1, camStartY=7, camStartZ=16, camEndY=.8, camEndZ=-2, lookStartZ=2, lookEndZ=-16, parallax=1.2, pointerRadius=7, pointerStrength=.9;
+const Lerp=(a,b,t)=>a+(b-a)*t, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const hexToVec3=h=>{const n=parseInt(h.slice(1),16);return new THREE.Vector3(((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255)};
+const canvas=document.getElementById("scene");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(innerWidth,innerHeight,false);
+renderer.setClearColor(0x000000,1);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x000000);scene.fog=new THREE.Fog(0x000000,0,22);
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,400);camera.position.set(0,camStartY,camStartZ);scene.add(camera);
+const group=new THREE.Group();scene.add(group);
+
+const SNOISE=`
+vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x,289.0);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+float snoise(vec3 v){
+ const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);
+ vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
+ vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;
+ vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+ vec3 x1=x0-i1+1.0*C.xxx;vec3 x2=x0-i2+2.0*C.xxx;vec3 x3=x0-1.0+3.0*C.xxx;
+ i=mod(i,289.0);
+ vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+ float n_=1.0/7.0;vec3 ns=n_*D.wyz-D.xzx;
+ vec4 j=p-49.0*floor(p*ns.z*ns.z);
+ vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);
+ vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);
+ vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
+ vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));
+ vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+ vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
+ vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+ p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+ vec4 m=max(0.5-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;
+ return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}`;
+const vertex=`
+uniform float uTime,uStream,uSize,uWaveHeight,uFlow,uScale,uRepelRadius,uRepelStrength,uActivity;
+uniform vec3 uColLow,uColHigh,uCursor;varying float vFade;varying vec3 vColor;
+${SNOISE}
+void main(){
+ vec3 wp=vec3(position.x*13.0,0.0,position.z*25.0);wp.x+=position.y*6.0;
+ float zc=wp.z+uStream;
+ float wn=snoise(vec3(wp.x*.08,zc*.08,uTime*.15*uFlow))*2.0;
+ wn+=snoise(vec3(wp.x*.16,zc*.16,uTime*.3*uFlow))*.8;
+ wp.y+=wn*uWaveHeight;
+ vec3 finalPos=wp*uScale;vec4 modelPosition=modelMatrix*vec4(finalPos,1.0);
+ vec3 toP=modelPosition.xyz-uCursor;float cd=length(toP);
+ float fall=1.0-smoothstep(0.0,uRepelRadius,cd);
+ modelPosition.xyz+=normalize(toP+vec3(.0001))*fall*uRepelStrength*uActivity;
+ vec4 mvPosition=viewMatrix*modelPosition;
+ float colMix=smoothstep(-3.0,3.0,position.y+position.x*.5);
+ vColor=mix(uColLow,uColHigh,clamp(colMix,0.0,1.0));vFade=1.0;
+ gl_PointSize=max(uSize*(10.0/-mvPosition.z),1.5);gl_Position=projectionMatrix*mvPosition;
+}`;
+const fragment=`
+uniform float uOpacity,uBrightness,uAppear;varying float vFade;varying vec3 vColor;
+void main(){vec2 xy=gl_PointCoord-.5;float ll=length(xy);if(ll>.5)discard;
+ float a=smoothstep(.5,.1,ll);gl_FragColor=vec4(vColor*uBrightness,vFade*a*uOpacity*uAppear);
+}`;
+const uniforms={uTime:{value:0},uStream:{value:0},uSize:{value:pointSize},uWaveHeight:{value:waveHeight},uFlow:{value:flow},uScale:{value:scale},uColLow:{value:hexToVec3(colorLow)},uColHigh:{value:hexToVec3(colorHigh)},uOpacity:{value:opacity},uBrightness:{value:brightness},uCursor:{value:new THREE.Vector3()},uRepelRadius:{value:pointerRadius},uRepelStrength:{value:pointerStrength},uActivity:{value:0},uAppear:{value:0}};
+const geometry=new THREE.SphereGeometry(4.2,200,600);
+const material=new THREE.ShaderMaterial({uniforms,vertexShader:vertex,fragmentShader:fragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+const waves=new THREE.Points(geometry,material);waves.frustumCulled=false;group.add(waves);
+
+const moteCount=Math.round(atmoCount),pos=new Float32Array(moteCount*3),sizes=new Float32Array(moteCount),seeds=new Float32Array(moteCount);
+for(let i=0;i<moteCount;i++){pos[i*3]=Math.random()*2-1;pos[i*3+1]=Math.random()*2-1;pos[i*3+2]=Math.random()*2-1;sizes[i]=atmoSize*(.4+Math.random());seeds[i]=Math.random()}
+const moteGeo=new THREE.BufferGeometry();moteGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));moteGeo.setAttribute("aSize",new THREE.BufferAttribute(sizes,1));moteGeo.setAttribute("aSeed",new THREE.BufferAttribute(seeds,1));
+const moteMat=new THREE.ShaderMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,uniforms:{uTime:{value:0},uColor:{value:hexToVec3(atmoColor)}},vertexShader:`
+attribute float aSize;attribute float aSeed;uniform float uTime;varying float vA;
+void main(){vec3 p=position*4.0;p.x+=sin(uTime*.15+aSeed*6.28)*.7;p.y+=cos(uTime*.12+aSeed*9.0)*.7;
+ vec4 mv=modelViewMatrix*vec4(p,1.0);vA=.55;gl_PointSize=max(aSize*0.018*(300.0/-mv.z),1.0);gl_Position=projectionMatrix*mv;}
+`,fragmentShader:`
+uniform vec3 uColor;varying float vA;
+void main(){vec2 p=gl_PointCoord-.5;float l=length(p);if(l>.5)discard;float a=smoothstep(.5,0.0,l);gl_FragColor=vec4(uColor*a,a*vA*.55);}
+`});
+const motes=new THREE.Points(moteGeo,moteMat);motes.frustumCulled=false;scene.add(motes);
+
+let scrollTarget=0,scrollSmooth=0,scrollCurrent=0,stream=0,last=performance.now(),appearStart=last;
+const mouseTarget={x:0,y:0},mouse={x:0,y:0},POINTER={world:new THREE.Vector3(),activity:0,active:false,lastMove:performance.now()};
+const ndc=new THREE.Vector3(),dir=new THREE.Vector3(),target=new THREE.Vector3();
+function readScroll(){const max=document.documentElement.scrollHeight-innerHeight;scrollTarget=max>0?clamp(scrollY/max,0,1):0}
+addEventListener("scroll",readScroll,{passive:true});
+addEventListener("mousemove",e=>{mouseTarget.x=e.clientX/innerWidth*2-1;mouseTarget.y=-(e.clientY/innerHeight*2-1);POINTER.active=true;POINTER.lastMove=performance.now()},{passive:true});
+addEventListener("mouseout",e=>{if(!e.relatedTarget)POINTER.active=false},{passive:true});
+function updatePointerWorld(){target.set(0,0,0);if(POINTER.active){ndc.set(mouse.x,mouse.y,.5).unproject(camera);dir.copy(ndc).sub(camera.position).normalize();if(Math.abs(dir.z)>1e-4){const tt=-camera.position.z/dir.z;if(tt>0&&Number.isFinite(tt))target.copy(camera.position).addScaledVector(dir,tt)}}POINTER.world.lerp(target,.12);const idle=(performance.now()-POINTER.lastMove)/1000;POINTER.activity+=(((POINTER.active&&idle<3)?1:0)-POINTER.activity)*.06}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();readScroll()}
+addEventListener("resize",resize);resize();
+const hint=document.getElementById("scroll-hint");
+function animate(now){requestAnimationFrame(animate);const t=now/1000,dt=Math.min(.05,(now-last)/1000);last=now;
+ scrollSmooth=Lerp(scrollSmooth,scrollTarget,.10);scrollCurrent=Lerp(scrollCurrent,scrollSmooth,.06);mouse.x=Lerp(mouse.x,mouseTarget.x,.06);mouse.y=Lerp(mouse.y,mouseTarget.y,.06);
+ stream+=dt*(flow*2)*4;uniforms.uTime.value=t;uniforms.uStream.value=stream;uniforms.uWaveHeight.value=waveHeight*(1+scrollCurrent*scrollRise);
+ const ea=Math.min(scrollCurrent/.35,1),e=ea*ea*(3-2*ea);
+ camera.position.set(mouse.x*parallax,Lerp(camStartY,camEndY,e)+mouse.y*parallax*.3,Lerp(camStartZ,camEndZ,e));
+ camera.lookAt(mouse.x*parallax*.5,Lerp(0,.6,e),Lerp(lookStartZ,lookEndZ,e));
+ group.rotation.x=0;group.rotation.y=0;updatePointerWorld();uniforms.uCursor.value.copy(POINTER.world);uniforms.uActivity.value=POINTER.activity;
+ uniforms.uAppear.value=clamp((now-appearStart-200)/1400,0,1);
+ motes.position.copy(camera.position);moteMat.uniforms.uTime.value=t*atmoSpeed*8;
+ if(hint)hint.style.opacity=scrollCurrent>.04?"0":"1";
+ renderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+</script>
+
+</body></html>
