@@ -6,7 +6,7 @@
 <div class="hud"><div class="pill">⭐ SCORE: <span id="score">0</span></div><div class="pill">⏱️ TIME: <span id="time">60</span>s</div><div class="pill">🏆 BEST: <span id="best">0</span></div><div class="pill">🔥 LEVEL: <span id="level">1</span></div></div>
 <div class="arena" id="arena"><div class="basket" id="basket">🧺</div><div class="overlay" id="overlay"><div class="box"><div style="font-size:3rem">🥑🐟🥜</div><h2 id="overTitle">Ready, foodie?</h2><p id="overText">Move your basket and catch nutritious foods for points. Fast food takes points away. You have 60 seconds!</p><button class="btn" id="start">START GAME ▶</button></div></div></div>
 <div class="controls"><button class="control" id="left" aria-label="Move left">⬅️</button><button class="control" id="right" aria-label="Move right">➡️</button></div>
-<div class="hint">PC: ← → arrow keys or A / D · Mobile: drag the basket or use buttons</div><section class="leaderboard" aria-label="Local leaderboard"><h2>🏆 Local Top 10</h2><p>Scores saved on this device only.</p><form id="saveScoreForm"><input id="playerName" maxlength="16" placeholder="Enter nickname" aria-label="Nickname" required><button class="btn" type="submit">Save my score</button></form><ol id="leaderboardList"></ol><button class="reset" id="clearBoard" type="button">Clear local leaderboard</button></section><div class="legend"><span>🥑 <b>+10</b> good fats</span><span>🐟 <b>+15</b> omega-3</span><span>🍟 <b>−10</b> fast food</span><span>🍩 <b>−10</b> fast food</span></div></main>
+<div class="hint">PC: ← → arrow keys or A / D · Mobile: drag the basket or use buttons</div><section class="leaderboard" aria-label="Global leaderboard"><h2>🌍 Global Top 10</h2><p>Players from every device compete here. One best score per player.</p><p id="boardStatus" role="status">Connecting to global leaderboard…</p><form id="saveScoreForm"><input id="playerName" maxlength="16" placeholder="Enter nickname" aria-label="Nickname" required><button class="btn" type="submit">Submit score</button></form><ol id="leaderboardList"></ol></section><div class="legend"><span>🥑 <b>+10</b> good fats</span><span>🐟 <b>+15</b> omega-3</span><span>🍟 <b>−10</b> fast food</span><span>🍩 <b>−10</b> fast food</span></div></main>
 <script>
 const arena=document.getElementById('arena'),basket=document.getElementById('basket'),scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),bestEl=document.getElementById('best'),overlay=document.getElementById('overlay'),startBtn=document.getElementById('start');
 const foods=[{e:'🥑',p:10},{e:'🐟',p:15},{e:'🥜',p:10},{e:'🫒',p:10},{e:'🍳',p:5},{e:'🍟',p:-10},{e:'🍔',p:-10},{e:'🍩',p:-10},{e:'🍕',p:-5}];
@@ -21,11 +21,82 @@ function drop(){const f=foods[Math.floor(Math.random()*foods.length)],el=documen
 function loop(ts){if(!playing)return;if(!last)last=ts;const dt=Math.min((ts-last)/1000,.05);last=ts;const nextLevel=score>=150?4:score>=100?3:score>=50?2:1;if(nextLevel!==level){level=nextLevel;document.getElementById('level').textContent=level;arena.style.borderColor=level>=3?'#e8c878':'var(--line)'}const spawnDelay=[0,.35,.27,.21,.16][level];const baseSpeed=[0,260,340,430,520][level];spawn+=dt;if(spawn>spawnDelay){drop();spawn=0}speed=baseSpeed+(60-time)*(level>=3?6:4);const br=basket.getBoundingClientRect(),ar=arena.getBoundingClientRect();for(let i=items.length-1;i>=0;i--){const o=items[i];o.y+=speed*dt;o.el.style.top=o.y+'px';const caught=o.y+34>arena.clientHeight-67&&o.y<arena.clientHeight-12&&o.x+30>x-38&&o.x<x+38;if(caught){score=Math.max(0,score+o.p);scoreEl.textContent=score;o.el.remove();items.splice(i,1)}else if(o.y>arena.clientHeight){o.el.remove();items.splice(i,1)}}raf=requestAnimationFrame(loop)}
 function key(e){if(!playing)return;if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(x-38)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(x+38)}}document.addEventListener('keydown',key);
 let dragging=false;arena.addEventListener('pointerdown',e=>{if(!playing)return;dragging=true;arena.setPointerCapture(e.pointerId);const r=arena.getBoundingClientRect();move(e.clientX-r.left)});arena.addEventListener('pointermove',e=>{if(dragging){const r=arena.getBoundingClientRect();move(e.clientX-r.left)}});arena.addEventListener('pointerup',()=>dragging=false);arena.addEventListener('pointercancel',()=>dragging=false);
-function hold(id,dir){const b=document.getElementById(id);let t;b.addEventListener('pointerdown',e=>{e.preventDefault();if(playing){move(x+dir*34);t=setInterval(()=>move(x+dir*22),90)}});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearInterval(t)))}hold('left',-1);hold('right',1);startBtn.addEventListener('click',start);window.addEventListener('resize',()=>{if(playing)move(Math.min(x,arena.clientWidth-38))});const boardKey='fatFrenzyLocalTop10';
-function readBoard(){try{return JSON.parse(localStorage.getItem(boardKey)||'[]')}catch(e){return []}}
-function renderBoard(){const list=document.getElementById('leaderboardList');const rows=readBoard();list.innerHTML='';if(!rows.length){const li=document.createElement('li');li.textContent='No scores yet — set the first record!';list.appendChild(li);return}rows.forEach((row,index)=>{const li=document.createElement('li');li.textContent=(index+1)+'. '+row.name;const val=document.createElement('span');val.textContent=row.score+' pts';li.appendChild(val);list.appendChild(li)})}
-document.getElementById('saveScoreForm').addEventListener('submit',e=>{e.preventDefault();const name=document.getElementById('playerName').value.trim().replace(/[<>]/g,'').slice(0,16);if(!name)return;const rows=readBoard();rows.push({name,score});rows.sort((a,b)=>b.score-a.score);localStorage.setItem(boardKey,JSON.stringify(rows.slice(0,10)));renderBoard();document.getElementById('playerName').value=''});
+function hold(id,dir){const b=document.getElementById(id);let t;b.addEventListener('pointerdown',e=>{e.preventDefault();if(playing){move(x+dir*34);t=setInterval(()=>move(x+dir*22),90)}});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearInterval(t)))}hold('left',-1);hold('right',1);startBtn.addEventListener('click',start);window.addEventListener('resize',()=>{if(playing)move(Math.min(x,arena.clientWidth-38))});const boardStatus=document.getElementById('boardStatus');
+document.getElementById('saveScoreForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const name=document.getElementById('playerName').value.trim().replace(/[<>]/g,'').slice(0,16);
+ if(!name)return;
+ if(!window.submitGlobalScore){boardStatus.textContent='Connecting… please try again in a moment.';return}
+ const button=e.currentTarget.querySelector('button[type="submit"]');
+ button.disabled=true;
+ try{await window.submitGlobalScore(name,score)}finally{button.disabled=false}
+});
+document.getElementById('playerName').value=''});
 document.getElementById('clearBoard').addEventListener('click',()=>{if(confirm('Clear the local Top 10 on this device?')){localStorage.removeItem(boardKey);renderBoard()}});
 renderBoard();
 move(arena.clientWidth/2);
-</script></body></html>
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCtmgtMRPyP2zIOZdjV-ELZA_s5wewEY8",
+  authDomain: "fat-fact-challenge.firebaseapp.com",
+  projectId: "fat-fact-challenge",
+  storageBucket: "fat-fact-challenge.firebasestorage.app",
+  messagingSenderId: "456080495909",
+  appId: "1:456080495909:web:07629332728831ec28b6cc",
+  measurementId: "G-QW7HL35N78"
+};
+
+const statusEl=document.getElementById('boardStatus');
+const listEl=document.getElementById('leaderboardList');
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+function showBoard(rows){
+ listEl.innerHTML='';
+ if(!rows.length){const li=document.createElement('li');li.textContent='No scores yet — be the first!';listEl.appendChild(li);return}
+ rows.forEach((row,i)=>{
+  const li=document.createElement('li');
+  li.textContent=(i+1)+'. '+row.name;
+  const val=document.createElement('span');val.textContent=row.score+' pts';
+  li.appendChild(val);listEl.appendChild(li);
+ });
+}
+async function refreshBoard(){
+ const q=query(collection(db,'scores'),orderBy('score','desc'),limit(10));
+ const snap=await getDocs(q);
+ showBoard(snap.docs.map(d=>d.data()));
+}
+try{
+ await signInAnonymously(auth);
+ await refreshBoard();
+ statusEl.textContent='🟢 Connected — scores are shared globally!';
+}catch(err){
+ console.error('Firebase connection error:',err);
+ statusEl.textContent='Could not connect. Check Firebase setup and refresh the page.';
+}
+window.submitGlobalScore=async function(name,newScore){
+ try{
+  if(!auth.currentUser) await signInAnonymously(auth);
+  const ref=doc(db,'scores',auth.currentUser.uid);
+  const old=await getDoc(ref);
+  if(old.exists() && Number(old.data().score)>=newScore){
+   statusEl.textContent='Your global best is already '+old.data().score+' points. Beat it to update your record!';
+   await refreshBoard();return;
+  }
+  await setDoc(ref,{name,score:newScore,updatedAt:serverTimestamp()});
+  statusEl.textContent='🏆 Score submitted to the global leaderboard!';
+  document.getElementById('playerName').value='';
+  await refreshBoard();
+ }catch(err){
+  console.error('Score submission error:',err);
+  statusEl.textContent='Could not submit score: '+(err.code||err.message||'unknown error');
+ }
+};
+</script>
+</body></html>
