@@ -31,9 +31,6 @@ document.getElementById('saveScoreForm').addEventListener('submit',async e=>{
  button.disabled=true;
  try{await window.submitGlobalScore(name,score)}finally{button.disabled=false}
 });
-document.getElementById('playerName').value=''});
-document.getElementById('clearBoard').addEventListener('click',()=>{if(confirm('Clear the local Top 10 on this device?')){localStorage.removeItem(boardKey);renderBoard()}});
-renderBoard();
 move(arena.clientWidth/2);
 </script>
 <script type="module">
