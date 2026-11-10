@@ -27,6 +27,12 @@ header .art{animation:heroRise .9s .15s ease both,gentleFloat 6s 1.1s ease-in-ou
 .reveal.text-reveal.in-view{transform:translate3d(0,0,0);clip-path:inset(0 0 0 0)}
 .reveal-stagger>*{transition-delay:var(--reveal-delay,0ms)}
 @media(prefers-reduced-motion:reduce){.reveal,.reveal.text-reveal{filter:none;clip-path:none;transform:none;opacity:1}}
+/* Keep the interactive quiz independent from scroll-reveal visibility. */
+#play,#play *{visibility:visible}
+#question,#answers,#visual,#feedback{opacity:1;visibility:visible}
+#answers{display:grid}
+#next:disabled{opacity:.45;filter:saturate(.55);cursor:not-allowed;pointer-events:none}
+
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
  .reveal{opacity:1;transform:none}
@@ -81,7 +87,7 @@ footer{background:rgba(0,0,0,.45)}
 /* Scroll-driven cinematic reveals for the learning page only; Flow Wave background stays unchanged. */
 (()=>{
  const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
- const targets=document.querySelectorAll('header .eyebrow,header h1,header .lead,header .btn,section .head,section .card,section .compare,section .game,footer .wrap');
+ const targets=document.querySelectorAll('header .eyebrow,header h1,header .lead,header .btn,section .head,section .card,section .compare,footer .wrap');
  targets.forEach((el,i)=>{
    el.classList.add('reveal');
    if(el.matches('.head h2, .head .eyebrow')) el.classList.add('text-reveal');
