@@ -20,13 +20,6 @@ header .art{animation:heroRise .9s .15s ease both,gentleFloat 6s 1.1s ease-in-ou
 .card:hover,.compare:hover{transform:translateY(-7px);border-color:var(--green);box-shadow:0 14px 32px rgba(0,0,0,.2)}
 .card .ico{display:inline-block;transition:transform .3s ease}
 .card:hover .ico{transform:translateY(-3px) rotate(-7deg) scale(1.12)}
-/* Cinematic scroll typography + staggered section reveals */
-.reveal{opacity:0;transform:translate3d(0,54px,0) scale(.985);filter:blur(7px);transition:opacity .85s ease,transform .95s cubic-bezier(.16,1,.3,1),filter .85s ease;will-change:opacity,transform,filter}
-.reveal.in-view{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
-.reveal.text-reveal{transform:translate3d(0,75px,0);clip-path:inset(0 0 100% 0);transition:opacity .75s ease,transform 1s cubic-bezier(.16,1,.3,1),clip-path 1s cubic-bezier(.16,1,.3,1)}
-.reveal.text-reveal.in-view{transform:translate3d(0,0,0);clip-path:inset(0 0 0 0)}
-.reveal-stagger>*{transition-delay:var(--reveal-delay,0ms)}
-@media(prefers-reduced-motion:reduce){.reveal,.reveal.text-reveal{filter:none;clip-path:none;transform:none;opacity:1}}
 /* Keep the interactive quiz independent from scroll-reveal visibility. */
 #play,#play *{visibility:visible}
 #question,#answers,#visual,#feedback{opacity:1;visibility:visible}
@@ -84,29 +77,6 @@ footer{background:rgba(0,0,0,.45)}
 <footer><div class="wrap"><b>🥑 FAT FACT CHALLENGE</b><br>Project by JAMES B VETTOM · Roll No. 33 · Health and Wellness</div></footer>
 
 <script>
-/* Scroll-driven cinematic reveals for the learning page only; Flow Wave background stays unchanged. */
-(()=>{
- const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
- const targets=document.querySelectorAll('header .eyebrow,header h1,header .lead,header .btn,section .head,section .card,section .compare,footer .wrap');
- targets.forEach((el,i)=>{
-   el.classList.add('reveal');
-   if(el.matches('.head h2, .head .eyebrow')) el.classList.add('text-reveal');
-   if(el.matches('.card,.compare')) el.style.setProperty('--reveal-delay',(i%4)*110+'ms');
- });
- if(reduceMotion||!('IntersectionObserver' in window)){
-   targets.forEach(el=>el.classList.add('in-view'));
-   return;
- }
- const observer=new IntersectionObserver(entries=>{
-   entries.forEach(entry=>{
-     if(entry.isIntersecting){
-       entry.target.classList.add('in-view');
-       observer.unobserve(entry.target);
-     }
-   });
- },{threshold:.14,rootMargin:'0px 0px -55px 0px'});
- targets.forEach(el=>observer.observe(el));
-})();
 </script>
 
 <script>
