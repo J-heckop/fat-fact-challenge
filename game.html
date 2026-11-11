@@ -67,6 +67,7 @@ function showBoard(rows){
  rows.forEach((row,i)=>{
   const li=document.createElement('li');
   li.textContent=(i+1)+'. '+row.name;
+  if(i===0){const crown=document.createElement('span');crown.className='first-place-crown';crown.textContent=' 👑';li.appendChild(crown)}
   const val=document.createElement('span');val.textContent=row.score+' pts';
   li.appendChild(val);listEl.appendChild(li);
  });
