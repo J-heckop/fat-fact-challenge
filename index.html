@@ -54,8 +54,8 @@ footer{background:rgba(0,0,0,.45)}
 #scroll-hint{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:2;color:rgba(174,240,192,.7);font-size:11px;letter-spacing:.22em;text-transform:uppercase;pointer-events:none;transition:opacity .3s}
 @media(max-width:760px){header.wrap{min-height:calc(88vh - 65px);padding:65px 0 80px}header h1{font-size:clamp(2.7rem,12vw,4.8rem)}}
 
-</style></head><body><canvas id="scene" aria-hidden="true"></canvas><div id="scroll-hint">SCROLL ↓</div>
-<nav><div class="wrap nav"><a class="brand" href="#">🥑 FAT <b>FACT</b> CHALLENGE</a><div class="links"><a href="#learn">Learn</a><a href="#types">Fat types</a><a href="#health">Health</a><a href="#game">Play</a><a href="game.html">Arcade</a></div></div></nav>
+.sound-toggle{border:1px solid rgba(52,232,154,.45);background:rgba(4,25,15,.85);color:#eafff2;border-radius:999px;padding:7px 11px;font:700 12px system-ui;cursor:pointer}</style></head><body><canvas id="scene" aria-hidden="true"></canvas><div id="scroll-hint">SCROLL ↓</div>
+<nav><div class="wrap nav"><a class="brand" href="#">🥑 FAT <b>FACT</b> CHALLENGE</a><div class="links"><button class="sound-toggle" id="soundToggle" type="button">🔊 Sound ON</button><a href="#learn">Learn</a><a href="#types">Fat types</a><a href="#health">Health</a><a href="#game">Play</a><a href="game.html">Arcade</a></div></div></nav>
 <header class="wrap"><div><div class="eyebrow">Health & Wellness · Interactive learning</div><h1>Know your fats.<br><em>Fuel your facts.</em></h1><p class="lead">Explore dietary fats, understand how they work in the body, and test your knowledge with three mini-games.</p><a class="btn" href="#game">🎮 Play the challenge</a></div><div class="art">🥑 🐟 🫒 🥜</div></header>
 <section id="learn"><div class="wrap"><div class="head"><div class="eyebrow">01 · The essentials</div><h2>Fat is not the enemy.</h2><p>Dietary fat is an essential nutrient. The type of fat and the foods it comes from matter.</p></div><div class="grid">
 <article class="card"><div class="ico">⚡</div><h3>Energy</h3><p>Fat provides 9 kilocalories per gram, a concentrated source of energy.</p></article>
@@ -80,6 +80,10 @@ footer{background:rgba(0,0,0,.45)}
 </script>
 
 <script>
+/* Synthesized game sounds; audio starts only after a user gesture. */
+const gameAudio=(()=>{let ctx=null,on=true;try{on=localStorage.getItem("ffcSound")!=="off"}catch(e){}
+function tone(f,d,t="sine",v=.04,delay=0){if(!on)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!ctx)ctx=new A();if(ctx.state==="suspended")ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain(),s=ctx.currentTime+delay;o.type=t;o.frequency.setValueAtTime(f,s);g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(v,s+.012);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(ctx.destination);o.start(s);o.stop(s+d+.02)}catch(e){}}
+return{get enabled(){return on},toggle(){on=!on;try{localStorage.setItem("ffcSound",on?"on":"off")}catch(e){}return on},click(){tone(520,.06)},correct(){tone(660,.12);tone(880,.18,"sine",.04,.11)},wrong(){tone(220,.16,"triangle");tone(165,.2,"triangle",.03,.12)},next(){tone(440,.07);tone(590,.09,"sine",.025,.07)},win(){[523,659,784,1047].forEach((f,i)=>tone(f,.22,"sine",.045,i*.13))},catchGood(){tone(740,.08,"triangle");tone(990,.1,"sine",.035,.06)},catchBad(){tone(190,.16,"triangle",.03)}}})();
 const data={
 quiz:[
 ["How much energy does 1 gram of fat provide?",["4 kcal","7 kcal","9 kcal","12 kcal"],2,"Fat provides about 9 kilocalories per gram."],
@@ -110,10 +114,11 @@ classify:[
 let mode="quiz",items=[],i=0,score=0,locked=false;const $=id=>document.getElementById(id);
 function start(m=mode){mode=m;items=data[m];i=score=0;locked=false;$("play").classList.remove("hidden");$("result").classList.add("hidden");$("score").textContent=0;$("label").textContent=({quiz:"KNOW YOUR FATS",guess:"GUESS THE FAT",classify:"FOOD CHOICES"})[m];render()}
 function render(){locked=false;let q=items[i],opts=q[mode==="quiz"?1:2];$("counter").textContent="Question "+(i+1)+" / "+items.length;$("bar").style.width=(i/items.length*100)+"%";$("visual").textContent=mode==="quiz"?"":q[0];$("question").textContent=q[mode==="quiz"?0:1];$("answers").innerHTML="";opts.forEach((v,n)=>{let b=document.createElement("button");b.className="answer";b.textContent=v;b.onclick=()=>choose(n);$("answers").appendChild(b)});$("feedback").textContent="";$("next").disabled=true;$("next").textContent=i===items.length-1?"See results →":"Next question →"}
-function choose(n){if(locked)return;locked=true;let q=items[i],correct=q[mode==="quiz"?2:3];[...$("answers").children].forEach((b,j)=>{b.disabled=true;if(j===correct)b.classList.add("correct");else if(j===n)b.classList.add("wrong")});if(n===correct){score++;$("score").textContent=score;$("feedback").textContent="✓ Correct! "+q[mode==="quiz"?3:4]}else $("feedback").textContent="Not quite. "+q[mode==="quiz"?3:4];$("next").disabled=false;$("bar").style.width=((i+1)/items.length*100)+"%"}
-$("next").onclick=()=>{if(!locked)return;if(++i===items.length)finish();else render()};
-function finish(){$("play").classList.add("hidden");$("result").classList.remove("hidden");$("finalScore").textContent=score+"/"+items.length;$("resultTitle").textContent=score===items.length?"Perfect score! 🏆":score>=Math.ceil(items.length*.7)?"Great work! 🌟":"Keep exploring! 🌱";$("resultText").textContent="You answered "+score+" out of "+items.length+" correctly. Review the facts and try again!"}
-document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));b.classList.add("active");start(b.dataset.mode)});$("again").onclick=()=>start(mode);start();
+function choose(n){if(locked)return;locked=true;let q=items[i],correct=q[mode==="quiz"?2:3];[...$("answers").children].forEach((b,j)=>{b.disabled=true;if(j===correct)b.classList.add("correct");else if(j===n)b.classList.add("wrong")});if(n===correct){gameAudio.correct();score++;$("score").textContent=score;$("feedback").textContent="✓ Correct! "+q[mode==="quiz"?3:4]}else{gameAudio.wrong();$("feedback").textContent="Not quite. "+q[mode==="quiz"?3:4];}$("next").disabled=false;$("bar").style.width=((i+1)/items.length*100)+"%"}
+$("next").onclick=()=>{if(!locked)return;gameAudio.next();if(++i===items.length)finish();else render()};
+function finish(){gameAudio.win();$("play").classList.add("hidden");$("result").classList.remove("hidden");$("finalScore").textContent=score+"/"+items.length;$("resultTitle").textContent=score===items.length?"Perfect score! 🏆":score>=Math.ceil(items.length*.7)?"Great work! 🌟":"Keep exploring! 🌱";$("resultText").textContent="You answered "+score+" out of "+items.length+" correctly. Review the facts and try again!"}
+const soundToggle=document.getElementById("soundToggle");function paintSound(){soundToggle.textContent=gameAudio.enabled?"🔊 Sound ON":"🔇 Sound OFF"}paintSound();soundToggle.onclick=()=>{const active=gameAudio.toggle();paintSound();if(active)gameAudio.click()};
+document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{gameAudio.click();document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));b.classList.add("active");start(b.dataset.mode)});$("again").onclick=()=>start(mode);start();
 </script>
 <script type="importmap">
 {"imports":{"three":"https://unpkg.com/three@0.143.0/build/three.module.js"}}
