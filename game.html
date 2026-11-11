@@ -21,7 +21,7 @@ let best=0;try{best=Number(localStorage.getItem('fatFrenzyBest')||0)}catch(e){be
 function place(){basket.style.left=x+'px'}
 function move(px){x=Math.max(38,Math.min(arena.clientWidth-38,px));place()}
 function clear(){items.forEach(o=>o.el.remove());items=[]}
-async async function finish(){gameAudio.win();playing=false;cancelAnimationFrame(raf);clearInterval(clock);clear();if(score>best){best=score;try{localStorage.setItem('fatFrenzyBest',best)}catch(e){}bestEl.textContent=best}
+async function finish(){gameAudio.win();playing=false;cancelAnimationFrame(raf);clearInterval(clock);clear();if(score>best){best=score;try{localStorage.setItem('fatFrenzyBest',best)}catch(e){}bestEl.textContent=best}
  const title=document.getElementById('overTitle'),msg=document.getElementById('overText'),form=document.getElementById('endScoreForm'),nameInput=document.getElementById('endPlayerName'),submit=document.getElementById('endSubmit');
  title.textContent='Time’s up! 🏁';msg.textContent='Your score: '+score+' points.';form.hidden=true;nameInput.required=true;startBtn.textContent='PLAY AGAIN ↻';startBtn.hidden=false;overlay.hidden=false;
  if(window.getGlobalPlayerScore){try{const old=await window.getGlobalPlayerScore();if(old){if(score<=Number(old.score)){title.textContent='🏆 HIGH SCORE: '+old.score;msg.textContent='Your latest score: '+score+'. Try again! Beat your high score! 🔥';return}
