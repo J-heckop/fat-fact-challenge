@@ -84,6 +84,10 @@ footer{background:rgba(0,0,0,.45)}
 const gameAudio=(()=>{let ctx=null,on=true;try{on=localStorage.getItem("ffcSound")!=="off"}catch(e){}
 function tone(f,d,t="sine",v=.04,delay=0){if(!on)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!ctx)ctx=new A();if(ctx.state==="suspended")ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain(),s=ctx.currentTime+delay;o.type=t;o.frequency.setValueAtTime(f,s);g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(v,s+.012);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(ctx.destination);o.start(s);o.stop(s+d+.02)}catch(e){}}
 return{get enabled(){return on},toggle(){on=!on;try{localStorage.setItem("ffcSound",on?"on":"off")}catch(e){}return on},click(){tone(520,.06)},correct(){tone(660,.12);tone(880,.18,"sine",.04,.11)},wrong(){tone(220,.16,"triangle");tone(165,.2,"triangle",.03,.12)},next(){tone(440,.07);tone(590,.09,"sine",.025,.07)},win(){[523,659,784,1047].forEach((f,i)=>tone(f,.22,"sine",.045,i*.13))},catchGood(){tone(740,.08,"triangle");tone(990,.1,"sine",.035,.06)},catchBad(){tone(190,.16,"triangle",.03)}}})();
+const backgroundMusic=new Audio("samuelfjohanns-technology-271272.mp3");backgroundMusic.loop=true;backgroundMusic.volume=0.24;
+function syncBackgroundMusic(){if(gameAudio.enabled){backgroundMusic.play().catch(()=>{});}else{backgroundMusic.pause();}}
+document.addEventListener("pointerdown",syncBackgroundMusic);
+document.addEventListener("keydown",syncBackgroundMusic);
 const data={
 quiz:[
 ["How much energy does 1 gram of fat provide?",["4 kcal","7 kcal","9 kcal","12 kcal"],2,"Fat provides about 9 kilocalories per gram."],
@@ -117,7 +121,7 @@ function render(){locked=false;let q=items[i],opts=q[mode==="quiz"?1:2];$("count
 function choose(n){if(locked)return;locked=true;let q=items[i],correct=q[mode==="quiz"?2:3];[...$("answers").children].forEach((b,j)=>{b.disabled=true;if(j===correct)b.classList.add("correct");else if(j===n)b.classList.add("wrong")});if(n===correct){gameAudio.correct();score++;$("score").textContent=score;$("feedback").textContent="✓ Correct! "+q[mode==="quiz"?3:4]}else{gameAudio.wrong();$("feedback").textContent="Not quite. "+q[mode==="quiz"?3:4];}$("next").disabled=false;$("bar").style.width=((i+1)/items.length*100)+"%"}
 $("next").onclick=()=>{if(!locked)return;gameAudio.next();if(++i===items.length)finish();else render()};
 function finish(){gameAudio.win();$("play").classList.add("hidden");$("result").classList.remove("hidden");$("finalScore").textContent=score+"/"+items.length;$("resultTitle").textContent=score===items.length?"Perfect score! 🏆":score>=Math.ceil(items.length*.7)?"Great work! 🌟":"Keep exploring! 🌱";$("resultText").textContent="You answered "+score+" out of "+items.length+" correctly. Review the facts and try again!"}
-const soundToggle=document.getElementById("soundToggle");function paintSound(){soundToggle.textContent=gameAudio.enabled?"🔊 Sound ON":"🔇 Sound OFF"}paintSound();soundToggle.onclick=()=>{const active=gameAudio.toggle();paintSound();if(active)gameAudio.click()};
+const soundToggle=document.getElementById("soundToggle");function paintSound(){soundToggle.textContent=gameAudio.enabled?"🔊 Sound ON":"🔇 Sound OFF"}paintSound();soundToggle.onclick=()=>{const active=gameAudio.toggle();paintSound();if(active){gameAudio.click();backgroundMusic.play().catch(()=>{});}else{backgroundMusic.pause();}};
 document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{gameAudio.click();document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));b.classList.add("active");start(b.dataset.mode)});$("again").onclick=()=>start(mode);start();
 </script>
 <script type="importmap">
